@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { CodeSample } from "@/components/code-sample";
 import { TryIt } from "@/components/try-it";
+import { resolveBillingProvider } from "@/lib/billing/provider";
 import { config, isDemoMode } from "@/lib/config";
 import { curlPng, DEMO_KEY_SAMPLE } from "@/lib/examples";
 
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default function HomePage() {
   const demo = isDemoMode();
   const showBuiltInKey = demo && config.demoKey() === DEMO_KEY_SAMPLE;
+  const billing = resolveBillingProvider();
 
   return (
     <>
@@ -69,15 +71,34 @@ export default function HomePage() {
           <article className="card">
             <p className="step">DEMO</p>
             <h3>100 renders / month</h3>
-            <p>No card. Mock checkout upgrades the same key to the Pro quota so you can try the billing path.</p>
+            <p>
+              {billing === "demo"
+                ? "No card on this deployment. Mock checkout upgrades the same key to the Pro quota so you can try the billing path."
+                : "Free tier for a key that has not subscribed. Upgrade that same key through checkout."}
+            </p>
           </article>
           <article className="card">
-            <p className="step">PRO</p>
+            <p className="step">PRO · $19 / month</p>
             <h3>10,000 renders / month</h3>
-            <p>
-              Set <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_PRICE_ID</code>, and <code>STRIPE_WEBHOOK_SECRET</code>.
-              Checkout opens a real subscription. Optional meter events report each render.
-            </p>
+            {billing === "creem" ? (
+              <p>
+                Checkout uses Creem. <code>POST /api/v1/billing/checkout</code> with your API key returns the payment URL.
+                The key moves to Pro when the Creem webhook confirms payment.
+              </p>
+            ) : billing === "stripe" ? (
+              <p>
+                Checkout uses Stripe sandbox. Set <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_PRICE_ID</code>, and <code>STRIPE_WEBHOOK_SECRET</code>.
+                Optional meter events report each render.
+              </p>
+            ) : billing === "paddle" ? (
+              <p>Paddle is not available yet. Checkout on this provider returns an error until it is implemented.</p>
+            ) : billing === null ? (
+              <p><code>BILLING_PROVIDER</code> must be creem, paddle, stripe, or demo.</p>
+            ) : (
+              <p>
+                No card on this deployment. <code>POST /api/v1/billing/checkout</code> returns a mock checkout that upgrades the same key.
+              </p>
+            )}
           </article>
         </div>
       </section>

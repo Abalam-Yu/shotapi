@@ -206,6 +206,10 @@ th, td { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 1px solid var
 th { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 
 .footer { padding: 2rem 0 3rem; color: var(--muted); border-top: 1px solid var(--line); }
+.footer nav { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; margin-top: 0.8rem; }
+.footer nav a { color: var(--ink); }
+.legal h2 { font-size: 1.7rem; margin-top: 1.8rem; }
+.legal p, .legal li { max-width: 44rem; }
 
 @media (max-width: 860px) {
   .hero, .try, .grid-3, .pricing { grid-template-columns: 1fr; }

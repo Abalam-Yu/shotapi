@@ -1,3 +1,5 @@
+import { resolveBillingProvider } from "./billing/provider";
+
 function positiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const parsed = Number(value);
@@ -18,11 +20,29 @@ export function resolveDriver(): "chrome" | "sparticuz" {
   return process.env.VERCEL ? "sparticuz" : "chrome";
 }
 
-export type BillingStatus = "demo" | "stripe" | "stripe_incomplete";
+export type BillingStatus =
+  | "demo"
+  | "stripe"
+  | "stripe_incomplete"
+  | "creem"
+  | "creem_incomplete"
+  | "paddle"
+  | "invalid";
 
 export function billingStatus(): BillingStatus {
-  if (!process.env.STRIPE_SECRET_KEY) return "demo";
-  if (!process.env.STRIPE_PRICE_ID || !process.env.STRIPE_WEBHOOK_SECRET) return "stripe_incomplete";
+  const provider = resolveBillingProvider();
+  if (!provider) return "invalid";
+  if (provider === "demo") return "demo";
+  if (provider === "paddle") return "paddle";
+  if (provider === "creem") {
+    if (!process.env.CREEM_API_KEY || !process.env.CREEM_PRODUCT_ID || !process.env.CREEM_WEBHOOK_SECRET) {
+      return "creem_incomplete";
+    }
+    return "creem";
+  }
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_ID || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return "stripe_incomplete";
+  }
   return "stripe";
 }
 
@@ -60,5 +80,9 @@ export const config = {
   appUrl(): string | undefined {
     const url = process.env.NEXT_PUBLIC_APP_URL;
     return url ? url.replace(/\/$/, "") : undefined;
+  },
+  supportEmail(): string {
+    const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim();
+    return email || "support@shotapi.dev";
   },
 };

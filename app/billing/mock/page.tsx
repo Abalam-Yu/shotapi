@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { confirmDemoCheckout, verifyDemoToken } from "@/lib/billing";
+import { resolveBillingProvider } from "@/lib/billing/provider";
 import { ApiError } from "@/lib/errors";
 import { quotaFor } from "@/lib/usage";
 import { getStore } from "@/lib/store";
@@ -28,11 +29,16 @@ export default async function MockCheckoutPage({
   searchParams: Promise<{ token?: string; error?: string }>;
 }) {
   const { token = "", error = "" } = await searchParams;
-  if (process.env.STRIPE_SECRET_KEY) {
+  const provider = resolveBillingProvider();
+  if (provider !== "demo") {
     return (
       <section className="section">
         <h1>Demo checkout is off</h1>
-        <p>Stripe is configured. Plan changes come from Checkout and the webhook.</p>
+        <p>
+          {provider
+            ? <>This deployment uses {provider} billing. Plan changes come from checkout and the webhook.</>
+            : <>Billing provider is misconfigured. Set <code>BILLING_PROVIDER</code> to creem, paddle, stripe, or demo.</>}
+        </p>
       </section>
     );
   }
@@ -56,7 +62,7 @@ export default async function MockCheckoutPage({
       <p className="eyebrow">Demo billing</p>
       <h1>Mock checkout</h1>
       <p>
-        This deployment has no <code>STRIPE_SECRET_KEY</code>, so nothing is charged.
+        This deployment uses demo billing, so nothing is charged.
         Marking the checkout paid moves the key to the Pro quota ({quotaFor("pro").toLocaleString()} renders / month).
       </p>
       {invalid ? <p className="status error" role="status">{invalid}</p> : null}

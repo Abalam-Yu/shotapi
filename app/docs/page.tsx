@@ -70,14 +70,30 @@ export default function DocsPage() {
       <h2>Billing</h2>
       <p>
         <code>POST /api/v1/billing/checkout</code> with the API key returns <code>{`{ "mode", "url" }`}</code>.
-        Without <code>STRIPE_SECRET_KEY</code>, <code>mode</code> is <code>demo</code> and <code>url</code> opens a mock checkout.
-        Confirming it sets that key&apos;s plan to <code>pro</code>. You can also POST the token to <code>/api/v1/billing/demo-confirm</code>.
+        The provider is <code>BILLING_PROVIDER</code> when set (<code>creem</code>, <code>paddle</code>, <code>stripe</code>, or <code>demo</code>).
+        Otherwise Creem is used when <code>CREEM_API_KEY</code> is set, then Stripe when <code>STRIPE_SECRET_KEY</code> is set, then demo.
       </p>
       <CodeSample label="Start checkout" code={curlCheckout} />
+      <p>
+        Demo mode returns a mock checkout URL. Confirming it sets that key&apos;s plan to <code>pro</code>.
+        You can also POST the token to <code>/api/v1/billing/demo-confirm</code>.
+      </p>
+      <p>
+        Creem checkout sends <code>metadata.keyId</code> and <code>request_id</code> equal to the API key id.
+        Set <code>CREEM_TEST_MODE=1</code> to call <code>https://test-api.creem.io</code>.
+        Point the webhook at <code>POST /api/v1/billing/webhook/creem</code> and set <code>CREEM_WEBHOOK_SECRET</code>.
+        The route checks the <code>creem-signature</code> HMAC.
+        <code>checkout.completed</code> and <code>subscription.paid</code> set the plan to <code>pro</code>.
+        <code>subscription.canceled</code> and <code>subscription.expired</code> return it to <code>demo</code>.
+        A scheduled cancellation does not change the plan.
+      </p>
       <p>
         With Stripe configured, checkout is a subscription for <code>STRIPE_PRICE_ID</code> (a recurring price).
         Point the webhook at <code>POST /api/v1/billing/webhook</code> and set <code>STRIPE_WEBHOOK_SECRET</code>.
         <code>checkout.session.completed</code> upgrades the key. <code>customer.subscription.deleted</code>, or an update to <code>canceled</code> / <code>unpaid</code>, returns it to <code>demo</code>.
+      </p>
+      <p>
+        <code>BILLING_PROVIDER=paddle</code> is reserved. Checkout returns 501 until that provider is implemented.
       </p>
       <p>
         If <code>STRIPE_METER_EVENT_NAME</code> is set and the key has a Stripe customer id, each successful render also sends a Billing Meter event.
