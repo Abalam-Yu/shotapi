@@ -211,7 +211,32 @@ th { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; colo
 .legal h2 { font-size: 1.7rem; margin-top: 1.8rem; }
 .legal p, .legal li { max-width: 44rem; }
 
+.price-tag { margin: 0.2rem 0 0.9rem; display: flex; align-items: baseline; gap: 0.35rem; }
+.price-amount { font-family: var(--serif); font-size: 2.6rem; line-height: 1; letter-spacing: -0.04em; color: var(--ink); }
+.price-period { color: var(--muted); font-size: 0.95rem; }
+.feature-list { margin: 0 0 1.15rem; padding-left: 1.1rem; color: var(--muted); }
+.feature-list li { margin: 0.28rem 0; }
+.card-pro { border-color: rgba(143, 52, 20, 0.4); box-shadow: 0 24px 60px rgba(143, 52, 20, 0.12); }
+.fineprint { margin: 0.85rem 0 0; font-size: 0.86rem; }
+.pricing .card { display: flex; flex-direction: column; }
+.pricing .card > .button { margin-top: auto; align-self: flex-start; }
+
+.toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1.1rem;
+  margin: 0.4rem 0 2rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.toc a { color: var(--ink); text-decoration: none; }
+.toc a:hover { color: var(--copper); }
+
+h2[id], #billing { scroll-margin-top: 1.25rem; }
+
 @media (max-width: 860px) {
   .hero, .try, .grid-3, .pricing { grid-template-columns: 1fr; }
   h1 { font-size: 3rem; }
+  .price-amount { font-size: 2.3rem; }
 }
