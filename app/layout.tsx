@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { PRO_PRICE } from "@/lib/examples";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     default: "ShotAPI",
     template: "%s · ShotAPI",
   },
-  description: "Render a public URL or HTML to PNG, JPEG, or PDF with an API key.",
+  description: `URL or HTML in, PNG, JPEG, or PDF out. ShotAPI Pro is ${PRO_PRICE}/mo.`,
 };
 
 export const viewport: Viewport = {
