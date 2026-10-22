@@ -1,8 +1,8 @@
 # ShotAPI
 
-把公开 URL 或一段 HTML 渲染成 PNG、JPEG 或 PDF 的 API（MVP）。请求带 API Key，成功一次记一次用量。没有 Stripe 密钥时走 demo 计费，接口照常可用。
+把公开 URL 或一段 HTML 渲染成 PNG、JPEG 或 PDF 的 API（MVP）。请求带 API Key，成功一次记一次用量。没有 Stripe 密钥时走 demo 计费，接口照常可用。对外标价 ShotAPI Pro **$19/月**。
 
-英文接口说明在应用里的 [`/docs`](http://localhost:3000/docs)。
+英文接口说明在应用里的 [`/docs`](http://localhost:3000/docs)。落地页和文档里的 curl 示例默认指向 `https://shotapi-three.vercel.app`，可用 `NEXT_PUBLIC_APP_URL` 覆盖。下面的命令仍是本机地址。
 
 ## 本地运行
 
