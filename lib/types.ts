@@ -1,5 +1,7 @@
 export type Plan = "demo" | "pro";
 
+export type BillingProviderName = "creem" | "paddle" | "stripe" | "demo";
+
 export type RenderFormat = "png" | "jpeg" | "pdf";
 
 export type WaitUntil = "load" | "domcontentloaded" | "networkidle";
@@ -12,8 +14,11 @@ export type ApiKeyRecord = {
   plan: Plan;
   createdAt: string;
   seededDemo?: boolean;
+  billingProvider?: BillingProviderName;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  creemCustomerId?: string;
+  creemSubscriptionId?: string;
 };
 
 export type UsageSnapshot = {

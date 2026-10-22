@@ -1,6 +1,6 @@
 # ShotAPI
 
-把公开 URL 或一段 HTML 渲染成 PNG、JPEG 或 PDF 的 API（MVP）。请求带 API Key，成功一次记一次用量。没有 Stripe 密钥时走 demo 计费，接口照常可用。对外标价 ShotAPI Pro **$19/月**。
+把公开 URL 或一段 HTML 渲染成 PNG、JPEG 或 PDF 的 API（MVP）。请求带 API Key，成功一次记一次用量。对外标价 ShotAPI Pro **$19/月**。收款默认走 Creem；没有 Creem 密钥时，有 Stripe 密钥走 Stripe 沙箱，否则走 demo 结账。接口照常可用。
 
 英文接口说明在应用里的 [`/docs`](http://localhost:3000/docs)。落地页和文档里的 curl 示例默认指向 `https://shotapi-three.vercel.app`，可用 `NEXT_PUBLIC_APP_URL` 覆盖。下面的命令仍是本机地址。
 
@@ -40,10 +40,16 @@ pnpm smoke                   # 另开终端，对着已启动的服务
 | `ALLOW_PRIVATE_URLS` | `1` 才允许截内网 / 本机。默认拒绝。 |
 | `RENDER_TIMEOUT_MS` | 单次渲染超时，默认 25000。 |
 | `SHOTAPI_MAX_HTML_BYTES` | HTML 上限，默认 500000。 |
-| `NEXT_PUBLIC_APP_URL` | Stripe 回跳用的公网 origin。 |
-| `STRIPE_SECRET_KEY` | 留空则 demo 结账。 |
-| `STRIPE_WEBHOOK_SECRET` | Webhook 签名密钥。 |
-| `STRIPE_PRICE_ID` | 订阅价格，必须是 recurring price。 |
+| `NEXT_PUBLIC_APP_URL` | 结账回跳用的公网 origin。 |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | 法律页和页脚上的支持邮箱。默认 `support@shotapi.dev`。 |
+| `BILLING_PROVIDER` | `creem`、`paddle`、`stripe` 或 `demo`。不设置时：有 `CREEM_API_KEY` 用 Creem，否则有 `STRIPE_SECRET_KEY` 用 Stripe，否则 demo。 |
+| `CREEM_API_KEY` | Creem API key。测试和正式环境的 key 不同。 |
+| `CREEM_PRODUCT_ID` | Creem 里 Pro 订阅产品的 id。 |
+| `CREEM_WEBHOOK_SECRET` | Creem webhook 签名密钥。用来校验 `creem-signature`。 |
+| `CREEM_TEST_MODE` | `1` 时 checkout 打到 `https://test-api.creem.io`。默认走正式 API。 |
+| `STRIPE_SECRET_KEY` | Stripe 沙箱。Creem 未配置、或 `BILLING_PROVIDER=stripe` 时使用。 |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook 签名密钥。 |
+| `STRIPE_PRICE_ID` | Stripe 订阅价格，必须是 recurring price。 |
 | `STRIPE_METER_EVENT_NAME` | 可选。每次成功渲染上报 Billing Meter。Meter 的 payload 键默认是 `stripe_customer_id` 和 `value`。 |
 
 完整模板见 [`.env.example`](.env.example)。不要把真实密钥提交进仓库。
@@ -88,7 +94,7 @@ curl -sS -X POST http://localhost:3000/api/v1/keys \
   -d '{"name":"acme","plan":"demo"}'
 ```
 
-结账。没有 Stripe 时返回 demo URL，打开后点 “Mark as paid”，该密钥升到 Pro 配额：
+结账。当前 provider 是 demo 时返回 mock URL，打开后点 “Mark as paid”，该密钥升到 Pro 配额。Creem 或 Stripe 则返回托管结账 URL：
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/v1/billing/checkout \
@@ -105,12 +111,26 @@ curl -sS -X POST http://localhost:3000/api/v1/billing/checkout \
 4. 设置 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`。不设置的话，`/api/v1/health` 里 `storage` 为 `memory`、`persistent` 为 `false`，实例回收后用量归零。
 5. `RENDER_DRIVER` 保持 `auto`。Vercel 上会走 `@sparticuz/chromium` + `playwright-core`。
 6. 函数内存：Fluid Compute 下在项目 Settings → Functions 里选至少 Standard（2 GB）。不要在 `vercel.json` 里写 `memory`。路由上的 `maxDuration` 是 60 秒。
-7. 要收款时再填 `STRIPE_SECRET_KEY`、`STRIPE_PRICE_ID`、`STRIPE_WEBHOOK_SECRET`，并把 Webhook 指到 `https://<你的域名>/api/v1/billing/webhook`，监听 `checkout.session.completed`、`customer.subscription.updated`、`customer.subscription.deleted`。
-8. 设置 `NEXT_PUBLIC_APP_URL` 为正式 origin。
+7. 正式收款用 Creem（商户主体，支持中国个人卖家和支付宝）。在 Creem 建一个月付 19 美元的 Pro 订阅产品，然后设置 `CREEM_API_KEY`、`CREEM_PRODUCT_ID`、`CREEM_WEBHOOK_SECRET`。Webhook 指到 `https://shotapi-three.vercel.app/api/v1/billing/webhook/creem`，至少订阅 `checkout.completed`、`subscription.paid`、`subscription.canceled`、`subscription.expired`。测试阶段再加 `CREEM_TEST_MODE=1`，并使用测试环境的 API key 和产品。
+8. Stripe 只作沙箱回退，不要删。`BILLING_PROVIDER=stripe`，或没配 Creem 但配了 `STRIPE_SECRET_KEY` 时走 Stripe。Webhook 仍是 `https://<你的域名>/api/v1/billing/webhook`，监听 `checkout.session.completed`、`customer.subscription.updated`、`customer.subscription.deleted`。`BILLING_PROVIDER=paddle` 先留着，结账会返回 501。
+9. 设置 `NEXT_PUBLIC_APP_URL` 为正式 origin，按需设置 `NEXT_PUBLIC_SUPPORT_EMAIL`。公开法律页在 `/legal/terms`、`/legal/privacy`、`/legal/refund`。
 
 如果部署包超过函数体积上限，改用自托管的 pack：把 [Sparticuz Chromium release](https://github.com/Sparticuz/chromium/releases) 里的 `chromium-v153.0.0-pack.tar` 放到你的存储，设置 `CHROMIUM_PACK_URL`。当前依赖的 `@sparticuz/chromium@153.0.0` 自带约 64MB 的 `chromium.br`，一般低于 250MB 的解压上限。
 
 另一条路：同一套 Next 应用跑在带 Chrome 的虚拟机或容器上（`RENDER_DRIVER=chrome`）。Serverless 上不放浏览器。代码不必拆成第二个服务。
+
+## Creem 测试模式
+
+不产生真实扣款。仪表盘左下角打开 Test Mode，产品和 API key 都用测试环境的。
+
+1. 建一个按月订阅的产品，复制 product id 到 `CREEM_PRODUCT_ID`。
+2. 设置 `CREEM_API_KEY`（测试 key）、`CREEM_WEBHOOK_SECRET`、`CREEM_TEST_MODE=1`、`NEXT_PUBLIC_APP_URL`。不要设 `BILLING_PROVIDER=stripe`，否则会绕开 Creem。
+3. 在 Creem 测试环境把 webhook 指到 `https://shotapi-three.vercel.app/api/v1/billing/webhook/creem`。本地调试可以用隧道把同一路径暴露出去。
+4. 用已有 API key 调用 `POST /api/v1/billing/checkout`。响应里 `mode` 为 `creem`。打开 `url`，用测试卡 `4111 1111 1111 1111`（任意未来有效期和任意 CVC）完成支付。
+5. `checkout.completed` 或 `subscription.paid` 到达后，`GET /api/v1/usage` 的 `plan` 应为 `pro`。密钥记录上会写入 `creemCustomerId`、`creemSubscriptionId` 和 `billingProvider`。
+6. 在测试仪表盘取消订阅。`subscription.canceled` 或 `subscription.expired` 之后，plan 回到 `demo`。只安排期末取消（`subscription.scheduled_cancel`）不会提前降级。
+
+签名错误的 webhook 会返回 400。正式上线时换正式 API key 和产品，并把 `CREEM_TEST_MODE` 设为 `0` 或删掉。
 
 ## 限制
 
@@ -129,6 +149,7 @@ curl -sS -X POST http://localhost:3000/api/v1/billing/checkout \
 - `app/api/v1/render` 认证渲染
 - `app/api/v1/usage` 用量
 - `app/api/v1/keys` 管理口令签发密钥
-- `app/api/v1/billing/*` Stripe Checkout、Webhook，或 demo 结账
+- `app/api/v1/billing/*` Creem、Stripe 沙箱，或 demo 结账
+- `app/legal/*` 服务条款、隐私政策、退款政策
 - `lib/render.ts` 选择 Chrome 或 Sparticuz
 - `lib/store.ts` 文件 / 内存 / Upstash

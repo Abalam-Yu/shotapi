@@ -204,37 +204,53 @@ export default function DocsPage() {
       <p>
         <strong>ShotAPI Pro</strong> is <strong>{PRO_PRICE}/month</strong> for {proQuota} renders.
         Demo includes {demoQuota} renders. Quotas follow <code>SHOTAPI_QUOTA_DEMO</code> and{" "}
-        <code>SHOTAPI_QUOTA_PRO</code> (defaults 100 and 10,000). The amount Stripe charges is the
-        recurring price in <code>STRIPE_PRICE_ID</code>; publish that price as {PRO_PRICE}.
+        <code>SHOTAPI_QUOTA_PRO</code> (defaults 100 and 10,000). Publish the Creem product, and
+        Stripe&apos;s <code>STRIPE_PRICE_ID</code> when that sandbox is in use, at {PRO_PRICE}.
       </p>
       <p>
         <code>POST /api/v1/billing/checkout</code> with a customer API key returns{" "}
-        <code>{`{ "mode", "url" }`}</code>.
+        <code>{`{ "mode", "url" }`}</code>. The provider is <code>BILLING_PROVIDER</code> when set
+        (<code>creem</code>, <code>paddle</code>, <code>stripe</code>, or <code>demo</code>).
+        Otherwise Creem is used when <code>CREEM_API_KEY</code> is set, then Stripe when{" "}
+        <code>STRIPE_SECRET_KEY</code> is set, then demo.
       </p>
       <ul>
         <li>
-          Without <code>STRIPE_SECRET_KEY</code>, <code>mode</code> is <code>demo</code> and{" "}
-          <code>url</code> opens <code>/billing/mock</code>. Confirming that page, or POSTing{" "}
-          <code>{`{ "token" }`}</code> to <code>/api/v1/billing/demo-confirm</code>, sets the key&apos;s
-          plan to <code>pro</code>. The token expires after 30 minutes. Demo confirm returns{" "}
-          <code>404</code> once Stripe is configured.
+          In demo mode, <code>mode</code> is <code>demo</code> and <code>url</code> opens{" "}
+          <code>/billing/mock</code>. Confirming that page, or POSTing <code>{`{ "token" }`}</code>{" "}
+          to <code>/api/v1/billing/demo-confirm</code>, sets the key&apos;s plan to <code>pro</code>.
+          The token expires after 30 minutes. Demo confirm returns <code>404</code> when the billing
+          provider is not demo.
         </li>
         <li>
-          With <code>STRIPE_SECRET_KEY</code> and <code>STRIPE_PRICE_ID</code>, <code>mode</code> is{" "}
-          <code>stripe</code> and <code>url</code> is a subscription Checkout session for that price.
-          Success returns to <code>/billing/success</code>; cancel returns to <code>/billing/cancel</code>.
-          Set <code>NEXT_PUBLIC_APP_URL</code> so those URLs use the public origin.
+          With Creem, <code>mode</code> is <code>creem</code>. Checkout sends <code>metadata.keyId</code>{" "}
+          and <code>request_id</code> equal to the API key id. Set <code>CREEM_TEST_MODE=1</code> to
+          call <code>https://test-api.creem.io</code>. Success returns to <code>/billing/success</code>.
+          Point the webhook at <code>POST /api/v1/billing/webhook/creem</code> and set{" "}
+          <code>CREEM_WEBHOOK_SECRET</code>. The route checks the <code>creem-signature</code> HMAC.{" "}
+          <code>checkout.completed</code> and <code>subscription.paid</code> set the plan to{" "}
+          <code>pro</code> and store the Creem customer and subscription ids.{" "}
+          <code>subscription.canceled</code> and <code>subscription.expired</code> return the key to{" "}
+          <code>demo</code>. A scheduled cancellation does not change the plan.
+        </li>
+        <li>
+          With Stripe, <code>mode</code> is <code>stripe</code> and <code>url</code> is a subscription
+          Checkout session for <code>STRIPE_PRICE_ID</code>. Success returns to{" "}
+          <code>/billing/success</code>; cancel returns to <code>/billing/cancel</code>. Set{" "}
+          <code>NEXT_PUBLIC_APP_URL</code> so those URLs use the public origin. Point Stripe at{" "}
+          <code>POST /api/v1/billing/webhook</code> and set <code>STRIPE_WEBHOOK_SECRET</code>. The
+          webhook authenticates with <code>Stripe-Signature</code>, not an API key.{" "}
+          <code>checkout.session.completed</code> upgrades the key to <code>pro</code>.{" "}
+          <code>customer.subscription.deleted</code>, or an update whose status is <code>canceled</code>{" "}
+          or <code>unpaid</code>, returns it to <code>demo</code>. Calling that webhook before Stripe
+          is configured returns <code>501 billing_disabled</code>.
+        </li>
+        <li>
+          <code>BILLING_PROVIDER=paddle</code> is reserved. Checkout returns <code>501 billing_disabled</code>{" "}
+          until that provider is implemented.
         </li>
       </ul>
       <CodeSample label="Start checkout" code={curlCheckout} />
-      <p>
-        Point Stripe at <code>POST /api/v1/billing/webhook</code> and set <code>STRIPE_WEBHOOK_SECRET</code>.
-        The webhook authenticates with <code>Stripe-Signature</code>, not an API key.{" "}
-        <code>checkout.session.completed</code> upgrades the key to <code>pro</code>.{" "}
-        <code>customer.subscription.deleted</code>, or an update whose status is <code>canceled</code>{" "}
-        or <code>unpaid</code>, returns it to <code>demo</code>. Calling the webhook before Stripe is
-        configured returns <code>501 billing_disabled</code>.
-      </p>
       <p>
         If <code>STRIPE_METER_EVENT_NAME</code> is set and the key has a Stripe customer id, each
         successful render also sends a Billing Meter event. The payload keys default to{" "}
@@ -273,7 +289,7 @@ export default function DocsPage() {
             <tr>
               <td>400</td>
               <td><code>invalid_signature</code></td>
-              <td>Stripe webhook signature is missing or invalid.</td>
+              <td>Stripe or Creem webhook signature is missing or invalid.</td>
             </tr>
             <tr>
               <td>401</td>
@@ -308,17 +324,20 @@ export default function DocsPage() {
             <tr>
               <td>500</td>
               <td><code>billing_misconfigured</code></td>
-              <td><code>STRIPE_SECRET_KEY</code> is set and <code>STRIPE_PRICE_ID</code> is not.</td>
+              <td>
+                The selected provider is missing a required setting, such as <code>STRIPE_PRICE_ID</code>,{" "}
+                <code>CREEM_PRODUCT_ID</code>, or a valid <code>BILLING_PROVIDER</code>.
+              </td>
             </tr>
             <tr>
               <td>501</td>
               <td><code>billing_disabled</code></td>
-              <td>Webhook called before Stripe is configured.</td>
+              <td>Stripe or Creem webhook secret is unset, or Paddle checkout was requested.</td>
             </tr>
             <tr>
               <td>502 / 504</td>
               <td><code>render_failed</code> / <code>render_timeout</code></td>
-              <td>Browser error, empty file, or the render exceeded the timeout. Stripe checkout failures use <code>billing_failed</code> (502).</td>
+              <td>Browser error, empty file, or the render exceeded the timeout. Checkout failures use <code>billing_failed</code> (502).</td>
             </tr>
             <tr>
               <td>503</td>
@@ -359,7 +378,8 @@ export default function DocsPage() {
       <h2 id="health">GET /api/v1/health</h2>
       <p>
         No API key. Returns <code>ok</code>, <code>driver</code>, <code>browser</code>,{" "}
-        <code>billing</code> (<code>demo</code>, <code>stripe</code>, or <code>stripe_incomplete</code>
+        <code>billing</code> (<code>demo</code>, <code>creem</code>, <code>creem_incomplete</code>,{" "}
+        <code>stripe</code>, <code>stripe_incomplete</code>, <code>paddle</code>, or <code>invalid</code>
         ), <code>storage</code>, <code>persistent</code>, and <code>demo</code>.
       </p>
     </article>

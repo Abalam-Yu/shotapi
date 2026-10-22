@@ -14,7 +14,8 @@ export default async function BillingSuccessPage({
         <p>Demo upgrade applied. This key is on the Pro quota. No payment was collected.</p>
       ) : (
         <p>
-          If Stripe is configured, the key upgrades when <code>checkout.session.completed</code> reaches the webhook.
+          The key moves to Pro when the billing webhook confirms payment.
+          Creem posts to <code>/api/v1/billing/webhook/creem</code>. Stripe posts to <code>/api/v1/billing/webhook</code>.
           Check <code>GET /api/v1/usage</code>.
         </p>
       )}

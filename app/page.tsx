@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { CodeSample } from "@/components/code-sample";
 import { TryIt } from "@/components/try-it";
+import { resolveBillingProvider } from "@/lib/billing/provider";
 import { config, isDemoMode } from "@/lib/config";
 import { APP_BASE, curlPng, DEMO_KEY_SAMPLE, PRO_PRICE } from "@/lib/examples";
 
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default function HomePage() {
   const demo = isDemoMode();
   const showBuiltInKey = demo && config.demoKey() === DEMO_KEY_SAMPLE;
+  const billing = resolveBillingProvider();
   const demoQuota = config.quotaDemo().toLocaleString("en-US");
   const proQuota = config.quotaPro().toLocaleString("en-US");
 
@@ -98,14 +100,42 @@ export default function HomePage() {
             <ul className="feature-list">
               <li>{proQuota} renders / month</li>
               <li>Same render API, higher quota</li>
-              <li>Stripe subscription, or mock checkout when Stripe is off</li>
+              <li>
+                {billing === "creem"
+                  ? "Checkout through Creem"
+                  : billing === "stripe"
+                    ? "Stripe sandbox subscription"
+                    : billing === "paddle"
+                      ? "Paddle checkout is not available yet"
+                      : billing === null
+                        ? "Billing provider is misconfigured"
+                        : "Mock checkout when live billing is off"}
+              </li>
             </ul>
             <Link className="button" href="/docs#checkout">
               Start checkout
             </Link>
             <p className="fineprint">
-              <code>POST /api/v1/billing/checkout</code> with your API key returns a Checkout URL.
-              The published price is {PRO_PRICE}/month.
+              {billing === "creem" ? (
+                <>
+                  <code>POST /api/v1/billing/checkout</code> with your API key returns a Creem URL.
+                  The key moves to Pro when the webhook confirms payment. Published price: {PRO_PRICE}/month.
+                </>
+              ) : billing === "stripe" ? (
+                <>
+                  <code>POST /api/v1/billing/checkout</code> opens a Stripe subscription for{" "}
+                  <code>STRIPE_PRICE_ID</code>. Publish that price as {PRO_PRICE}/month.
+                </>
+              ) : billing === "paddle" ? (
+                <>Paddle checkout is not available yet. The published price is {PRO_PRICE}/month.</>
+              ) : billing === null ? (
+                <><code>BILLING_PROVIDER</code> must be creem, paddle, stripe, or demo.</>
+              ) : (
+                <>
+                  <code>POST /api/v1/billing/checkout</code> with your API key returns a mock Checkout URL.
+                  The published price is {PRO_PRICE}/month.
+                </>
+              )}
             </p>
           </article>
         </div>
