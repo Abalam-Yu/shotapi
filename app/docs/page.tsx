@@ -319,7 +319,11 @@ export default function DocsPage() {
             <tr>
               <td>500</td>
               <td><code>browser_missing</code></td>
-              <td>Chrome or serverless Chromium did not launch.</td>
+              <td>
+                Chrome or serverless Chromium did not launch. On Vercel this is a missing{" "}
+                <code>playwright-core/browsers.json</code> or <code>@sparticuz/chromium</code> pack, or a
+                function below 2 GB.
+              </td>
             </tr>
             <tr>
               <td>500</td>
@@ -377,10 +381,15 @@ export default function DocsPage() {
 
       <h2 id="health">GET /api/v1/health</h2>
       <p>
-        No API key. Returns <code>ok</code>, <code>driver</code>, <code>browser</code>,{" "}
-        <code>billing</code> (<code>demo</code>, <code>creem</code>, <code>creem_incomplete</code>,{" "}
-        <code>stripe</code>, <code>stripe_incomplete</code>, <code>paddle</code>, or <code>invalid</code>
-        ), <code>storage</code>, <code>persistent</code>, and <code>demo</code>.
+        No API key. Returns <code>ok</code>, <code>driver</code> (the configured renderer:{" "}
+        <code>chrome</code> or <code>sparticuz</code>), <code>browser</code> (<code>chrome</code>,{" "}
+        <code>sparticuz</code>, or <code>missing</code>), <code>billing</code> (<code>demo</code>,{" "}
+        <code>creem</code>, <code>creem_incomplete</code>, <code>stripe</code>, <code>stripe_incomplete</code>,{" "}
+        <code>paddle</code>, or <code>invalid</code>), <code>storage</code>, <code>persistent</code>, and{" "}
+        <code>demo</code>. <code>browser</code> is <code>sparticuz</code> only when{" "}
+        <code>playwright-core/browsers.json</code> loads and the Sparticuz <code>chromium.br</code> pack is
+        in the function. <code>ok</code> is false when <code>browser</code> is <code>missing</code>. This
+        check does not start a browser process.
       </p>
     </article>
   );

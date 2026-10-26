@@ -1,30 +1,22 @@
 import { randomUUID } from "node:crypto";
 
-import { findChrome } from "@/lib/chrome";
+import { browserStatus } from "@/lib/browser-status";
 import { billingStatus, isDemoMode, resolveDriver } from "@/lib/config";
 import { errorResponse, json } from "@/lib/http";
 import { getStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-function browser(): "sparticuz" | "chrome" | "missing" {
-  if (resolveDriver() === "sparticuz") return "sparticuz";
-  try {
-    return findChrome() ? "chrome" : "missing";
-  } catch {
-    return "missing";
-  }
-}
-
 export async function GET() {
   const requestId = randomUUID();
   try {
     const store = await getStore();
+    const browser = await browserStatus();
     return json(
       {
-        ok: true,
+        ok: browser !== "missing",
         driver: resolveDriver(),
-        browser: browser(),
+        browser,
         billing: billingStatus(),
         storage: store.kind,
         persistent: store.persistent,

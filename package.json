@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "verify:trace": "node scripts/verify-trace.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

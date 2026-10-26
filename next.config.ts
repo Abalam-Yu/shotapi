@@ -1,11 +1,18 @@
 import type { NextConfig } from "next";
 
+import { browserRuntimeIncludes } from "./lib/server-assets";
+
+const browserRuntime = browserRuntimeIncludes();
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
-  // The Chromium pack is read from disk at runtime, not imported as a JS module.
+  // Keep Playwright and Sparticuz external so __dirname / import.meta.url stay
+  // inside the real package. browserRuntimeIncludes() adds the files those
+  // packages open with computed paths (browsers.json, bin/*.br).
   outputFileTracingIncludes: {
-    "/api/v1/render": ["./node_modules/@sparticuz/chromium/**/*"],
-    "/api/v1/demo/render": ["./node_modules/@sparticuz/chromium/**/*"],
+    "/api/v1/render": browserRuntime,
+    "/api/v1/demo/render": browserRuntime,
+    "/api/v1/health": browserRuntime,
   },
   async headers() {
     return [

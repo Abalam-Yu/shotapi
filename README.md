@@ -109,8 +109,8 @@ curl -sS -X POST http://localhost:3000/api/v1/billing/checkout \
 2. 生产环境不要设 `SHOTAPI_DEMO=1`，除非你接受公开演示密钥。
 3. 设置 `SHOTAPI_ADMIN_TOKEN`，部署后用它签发真正的 key。
 4. 设置 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`。不设置的话，`/api/v1/health` 里 `storage` 为 `memory`、`persistent` 为 `false`，实例回收后用量归零。
-5. `RENDER_DRIVER` 保持 `auto`。Vercel 上会走 `@sparticuz/chromium` + `playwright-core`。
-6. 函数内存：Fluid Compute 下在项目 Settings → Functions 里选至少 Standard（2 GB）。不要在 `vercel.json` 里写 `memory`。路由上的 `maxDuration` 是 60 秒。
+5. `RENDER_DRIVER` 保持 `auto`。Vercel 上会走 `@sparticuz/chromium` + `playwright-core`。Playwright 启动时用 `path.join(packageRoot, "browsers.json")` 读描述文件，Next 的文件追踪跟不住这条计算路径。pnpm 下 `packageRoot` 是 `node_modules/.pnpm/playwright-core@…` 的真实目录，不是 `node_modules/playwright-core` 软链。`next.config.ts` 会把这个 `browsers.json` 和 `@sparticuz/chromium` 的 `bin/*.br` 打进 `/api/v1/render`、`/api/v1/demo/render` 和 `/api/v1/health`。部署后可在构建产物上跑 `pnpm verify:trace` 确认追踪列表里同时有 `lib/coreBundle.js` 和它旁边的 `browsers.json`。
+6. 函数内存：Fluid Compute 下在项目 Settings → Functions 里选至少 Standard（2 GB）。不要在 `vercel.json` 里写 `memory`。路由上的 `maxDuration` 是 60 秒。包没打全时，渲染返回的 `browser_missing` 以前会误写成内存不足；`/api/v1/health` 现在只有浏览器文件真能加载时才报 `browser=sparticuz`，否则 `browser` 为 `missing` 且 `ok` 为 false。
 7. 正式收款用 Creem（商户主体，支持中国个人卖家和支付宝）。在 Creem 建一个月付 19 美元的 Pro 订阅产品，然后设置 `CREEM_API_KEY`、`CREEM_PRODUCT_ID`、`CREEM_WEBHOOK_SECRET`。Webhook 指到 `https://shotapi-three.vercel.app/api/v1/billing/webhook/creem`，至少订阅 `checkout.completed`、`subscription.paid`、`subscription.canceled`、`subscription.expired`。测试阶段再加 `CREEM_TEST_MODE=1`，并使用测试环境的 API key 和产品。
 8. Stripe 只作沙箱回退，不要删。`BILLING_PROVIDER=stripe`，或没配 Creem 但配了 `STRIPE_SECRET_KEY` 时走 Stripe。Webhook 仍是 `https://<你的域名>/api/v1/billing/webhook`，监听 `checkout.session.completed`、`customer.subscription.updated`、`customer.subscription.deleted`。`BILLING_PROVIDER=paddle` 先留着，结账会返回 501。
 9. 设置 `NEXT_PUBLIC_APP_URL` 为正式 origin，按需设置 `NEXT_PUBLIC_SUPPORT_EMAIL`。公开法律页在 `/legal/terms`、`/legal/privacy`、`/legal/refund`。
