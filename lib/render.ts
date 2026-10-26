@@ -19,6 +19,13 @@ function mapLaunchError(error: unknown): ApiError {
       "Could not launch Chrome. Install Google Chrome or set CHROME_PATH. On Vercel, leave RENDER_DRIVER=auto so the function uses @sparticuz/chromium.",
     );
   }
+  if (/browsers\.json|chromium\.br|input directory/i.test(message)) {
+    return new ApiError(
+      500,
+      "browser_missing",
+      "Could not launch serverless Chromium because playwright-core/browsers.json or the @sparticuz/chromium pack is missing from the function bundle.",
+    );
+  }
   return new ApiError(
     500,
     "browser_missing",
