@@ -12,7 +12,7 @@ export async function authenticateSecret(secret: string, store: Store): Promise<
     throw new ApiError(
       401,
       "unauthorized",
-      "Demo API key is disabled. Set SHOTAPI_DEMO=1 or create a key with SHOTAPI_ADMIN_TOKEN.",
+      "Demo API key is disabled. Mint a Free key with POST /api/v1/keys/free, or create one with SHOTAPI_ADMIN_TOKEN.",
     );
   }
   return record;

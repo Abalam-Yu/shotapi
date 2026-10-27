@@ -85,4 +85,37 @@ export const config = {
     const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim();
     return email || "support@shotapi.dev";
   },
+  freeKeysEnabled(): boolean {
+    const flag = process.env.SHOTAPI_FREE_KEYS;
+    if (flag === "0" || flag === "false") return false;
+    return true;
+  },
+  freeKeyIpLimit(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_IP_LIMIT, 5);
+  },
+  freeKeyIpWindowSec(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_IP_WINDOW_SEC, 86_400);
+  },
+  freeKeyEmailLimit(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_EMAIL_LIMIT, 5);
+  },
+  freeKeyEmailWindowSec(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_EMAIL_WINDOW_SEC, 86_400);
+  },
+  freeKeyGlobalLimit(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_GLOBAL_LIMIT, 1_000);
+  },
+  freeKeyGlobalWindowSec(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_GLOBAL_WINDOW_SEC, 3_600);
+  },
+  freeKeyDailyLimit(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_DAILY_LIMIT, 5_000);
+  },
+  freeKeyDailyWindowSec(): number {
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_DAILY_WINDOW_SEC, 86_400);
+  },
+  freeKeyCooldownSec(): number {
+    if (process.env.SHOTAPI_FREE_KEY_COOLDOWN_SEC === "0") return 0;
+    return positiveInt(process.env.SHOTAPI_FREE_KEY_COOLDOWN_SEC, 15);
+  },
 };

@@ -29,6 +29,14 @@ export function empty(status = 204): Response {
   return new Response(null, { status, headers: corsHeaders() });
 }
 
+function retryAfterHeader(error: ApiError): string {
+  const value = error.details?.retryAfterSeconds;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return String(Math.ceil(value));
+  }
+  return "30";
+}
+
 export function errorResponse(error: unknown, requestId: string): Response {
   if (error instanceof ApiError) {
     return json(
@@ -43,7 +51,7 @@ export function errorResponse(error: unknown, requestId: string): Response {
       error.status,
       {
         "x-request-id": requestId,
-        ...(error.status === 429 ? { "retry-after": "30" } : {}),
+        ...(error.status === 429 ? { "retry-after": retryAfterHeader(error) } : {}),
       },
     );
   }

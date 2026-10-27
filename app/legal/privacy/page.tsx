@@ -14,6 +14,7 @@ export default function PrivacyPage() {
     <LegalDocument
       title="Privacy Policy"
       description="This policy explains what ShotAPI stores when you use the rendering API and the public website."
+      updated="27 October 2026"
     >
       <h2>Who we are</h2>
       <p>
@@ -28,6 +29,11 @@ export default function PrivacyPage() {
         <li>Usage: a monthly count and byte total, plus a short event with the format, whether the source was a URL or HTML, the HTTP status, the byte size, and how long the render took. We do not store the URL, the HTML body, or the rendered file.</li>
         <li>Billing identifiers, when you pay: the billing provider, and the customer id and subscription id that provider sends us. We also send the API key id to that provider as checkout metadata so the webhook can find the key.</li>
         <li>Operational logs: request ids and error messages. Logs are for debugging and are not a customer database.</li>
+        <li>
+          Free-key mint: a short-lived hash of the client IP address, and a hash of the email if you type one. These
+          hashes enforce the mint rate limit. They are not written onto the API key record. The window is 24 hours by
+          default, then the counter expires. We do not store the raw IP or the raw email.
+        </li>
       </ul>
       <p>
         The marketing site does not run advertising cookies and does not ask you to create an account. The API is called

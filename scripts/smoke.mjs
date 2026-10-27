@@ -6,12 +6,13 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-async function request(path, { method = "GET", apiKey, body } = {}) {
+async function request(path, { method = "GET", apiKey, body, headers = {} } = {}) {
   const response = await fetch(base + path, {
     method,
     headers: {
       ...(body ? { "content-type": "application/json" } : {}),
       ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+      ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -79,6 +80,30 @@ assert(confirmed.status === 200 && confirmed.json?.plan === "pro", `confirm ${co
 
 const plan = await request("/api/v1/usage", { apiKey: key });
 assert(plan.json.key.plan === "pro", `plan ${plan.text}`);
+
+const minted = await request("/api/v1/keys/free", {
+  method: "POST",
+  body: { name: "smoke" },
+  headers: { "x-real-ip": `203.0.113.${1 + Math.floor(Math.random() * 200)}` },
+});
+assert(minted.status === 201 && minted.json?.plan === "demo" && minted.json?.tier === "free", `free key ${minted.status} ${minted.text}`);
+assert(typeof minted.json.key === "string" && minted.json.key.startsWith("sk_test_"), "free key secret");
+assert(!minted.text.includes("SHOTAPI_ADMIN_TOKEN"), "admin token leaked");
+
+const freePng = await request("/api/v1/render", {
+  method: "POST",
+  apiKey: minted.json.key,
+  body: { url: "https://example.com", format: "png" },
+});
+assert(freePng.status === 200, `free png ${freePng.status} ${freePng.text}`);
+assert(freePng.bytes.subarray(0, 4).toString("hex") === "89504e47", "free png magic");
+assert(freePng.headers.get("x-shotapi-plan") === "demo", "free plan header");
+
+const blockedAdmin = await request("/api/v1/keys", { method: "POST", body: { plan: "pro" } });
+assert(blockedAdmin.status === 401 || blockedAdmin.status === 503, `admin keys ${blockedAdmin.status}`);
+
+const billingAfter = await request("/api/v1/health");
+assert(billingAfter.json?.billing === health.json.billing, "billing changed");
 
 console.log("smoke ok", {
   storage: health.json.storage,
