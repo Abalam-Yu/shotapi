@@ -2,8 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { CodeSample } from "@/components/code-sample";
+import { MintKey } from "@/components/mint-key";
 import { config } from "@/lib/config";
-import { APP_BASE, curlCheckout, curlKey, curlPdf, curlPng, curlUsage, DEMO_KEY_SAMPLE, PRO_PRICE } from "@/lib/examples";
+import {
+  APP_BASE,
+  curlCheckout,
+  curlFreeKey,
+  curlKey,
+  curlPdf,
+  curlPng,
+  curlUrlPng,
+  curlUsage,
+  DEMO_KEY_SAMPLE,
+  PRO_PRICE,
+} from "@/lib/examples";
 
 export const dynamic = "force-dynamic";
 
@@ -54,12 +66,15 @@ export default function DocsPage() {
         A missing key returns <code>401 unauthorized</code>. The server stores a SHA-256 hash and
         shows a prefix (the first 16 characters) on later reads. The sample secret{" "}
         <code>{DEMO_KEY_SAMPLE}</code> works only while demo mode is on. On Vercel, demo mode is off
-        unless <code>SHOTAPI_DEMO=1</code>. Mint a real key with the admin token below.
+        unless <code>SHOTAPI_DEMO=1</code>, so that sample is rejected in production. Get a Free key
+        from the <a href="#keys">public mint</a> or the{" "}
+        <Link href="/#free-key">homepage form</Link>. That flow does not use an admin token.
       </p>
       <p>
-        <code>POST /api/v1/keys</code> uses <code>SHOTAPI_ADMIN_TOKEN</code> in those same headers.
-        That token is not a customer API key. Browser callers may POST cross-origin; CORS allows{" "}
-        <code>Authorization</code>, <code>Content-Type</code>, and <code>X-API-Key</code>.
+        <code>POST /api/v1/keys</code> is separate. It uses <code>SHOTAPI_ADMIN_TOKEN</code> in those
+        same headers. That token is not a customer API key, and the public mint never receives it.
+        Browser callers may POST cross-origin; CORS allows <code>Authorization</code>,{" "}
+        <code>Content-Type</code>, and <code>X-API-Key</code>.
       </p>
       <p>
         Failures are JSON: <code>{`{ "error": { "code", "message", "requestId" } }`}</code>, with{" "}
@@ -163,8 +178,9 @@ export default function DocsPage() {
       <CodeSample label="HTML to PNG" code={curlPng} />
       <CodeSample label="URL to PDF" code={curlPdf} />
       <p>
-        Replace <code>{DEMO_KEY_SAMPLE}</code> with a key from <a href="#keys">POST /api/v1/keys</a>{" "}
-        when demo mode is off.
+        Replace <code>$SHOTAPI_KEY</code> with the <code>key</code> from{" "}
+        <a href="#keys">POST /api/v1/keys/free</a>. <code>{DEMO_KEY_SAMPLE}</code> is local demo mode
+        only.
       </p>
 
       <h2 id="usage">GET /api/v1/usage</h2>
@@ -177,15 +193,34 @@ export default function DocsPage() {
       </p>
       <CodeSample label="Usage with X-API-Key" code={curlUsage} />
 
-      <h2 id="keys">POST /api/v1/keys</h2>
+      <h2 id="keys">Keys</h2>
+      <h3>POST /api/v1/keys/free</h3>
       <p>
-        Mints a key. Requires <code>SHOTAPI_ADMIN_TOKEN</code>. Returns <code>201</code> with{" "}
+        Mints one Free key for a visitor. No <code>SHOTAPI_ADMIN_TOKEN</code> and no account. The
+        plan is always <code>demo</code> (Free): {demoQuota} renders per UTC month. Returns{" "}
+        <code>201</code> with <code>key</code>, <code>id</code>, <code>prefix</code>, <code>name</code>,{" "}
+        <code>plan</code>, <code>tier</code> (<code>free</code>), <code>limit</code>, and{" "}
+        <code>period</code>. The full secret is in this response only. Optional body:{" "}
+        <code>{`{ "name": "show-hn", "email": "you@example.com" }`}</code>. <code>name</code> defaults
+        to <code>Free key</code> (1–80 characters). <code>email</code> is optional and is used only as
+        a rate-limit hash. <code>plan: &quot;pro&quot;</code> returns <code>400 invalid_request</code>.
+        Upgrade a Free key with checkout. Set <code>SHOTAPI_FREE_KEYS=0</code> to turn the route off (
+        <code>404 free_keys_disabled</code>). The route still works when <code>SHOTAPI_ADMIN_TOKEN</code>{" "}
+        is unset.
+      </p>
+      <CodeSample label="Mint a Free key" code={curlFreeKey} />
+      <CodeSample label="Public URL to PNG" code={curlUrlPng} />
+      <MintKey origin={APP_BASE} limit={config.quotaDemo()} />
+      <h3>POST /api/v1/keys</h3>
+      <p>
+        Operator mint. Requires <code>SHOTAPI_ADMIN_TOKEN</code>. Returns <code>201</code> with{" "}
         <code>key</code>, <code>id</code>, <code>prefix</code>, <code>name</code>, and <code>plan</code>.
         The full secret is in this response only. Body fields are optional:{" "}
         <code>{`{ "name": "acme", "plan": "demo" }`}</code>. <code>name</code> defaults to{" "}
         <code>API key</code> (1–80 characters). <code>plan</code> is <code>demo</code> or{" "}
-        <code>pro</code>, default <code>demo</code>. If the admin token is unset the route returns{" "}
-        <code>503 admin_disabled</code>.
+        <code>pro</code>, default <code>demo</code>. This is the only route that can create a Pro key
+        before payment. If the admin token is unset the route returns <code>503 admin_disabled</code>.
+        The public mint does not call this route and does not weaken it.
       </p>
       <CodeSample code={curlKey} />
 
@@ -307,6 +342,11 @@ export default function DocsPage() {
               <td>Demo preview was called while demo mode is off.</td>
             </tr>
             <tr>
+              <td>404</td>
+              <td><code>free_keys_disabled</code></td>
+              <td><code>POST /api/v1/keys/free</code> while <code>SHOTAPI_FREE_KEYS=0</code>.</td>
+            </tr>
+            <tr>
               <td>413</td>
               <td><code>payload_too_large</code></td>
               <td>HTML, the request body, or the rendered file is too large.</td>
@@ -314,7 +354,11 @@ export default function DocsPage() {
             <tr>
               <td>429</td>
               <td><code>rate_limited</code></td>
-              <td>Demo preview exceeded 30 requests in a minute. <code>Retry-After: 30</code>.</td>
+              <td>
+                Demo preview exceeded 30 requests in a minute (<code>Retry-After: 30</code>), or Free
+                key mint hit an IP, email, cooldown, or public cap. Mint responses include{" "}
+                <code>retryAfterSeconds</code> and a matching <code>Retry-After</code> header.
+              </td>
             </tr>
             <tr>
               <td>500</td>
@@ -354,6 +398,23 @@ export default function DocsPage() {
 
       <h2 id="limits">Rate limits and hard caps</h2>
       <ul>
+        <li>
+          <code>POST /api/v1/keys/free</code> is limited per client IP (default 5 keys / 24 hours),
+          per optional email (default 5 / 24 hours), per network cooldown (default 15 seconds), and
+          by a public cap (default 1,000 / hour and 5,000 / day). Counters are fixed windows. With
+          Upstash they are shared Redis keys (<code>shotapi:mint:v1:*</code>) and survive a new
+          instance. Without Upstash they live in the process, same as the memory store, and reset
+          when that process exits. A missing client IP shares one <code>unknown</code> bucket. On
+          Vercel the IP is <code>x-real-ip</code>, which a caller-supplied <code>x-forwarded-for</code>{" "}
+          does not override. The raw IP and email are not stored. Tune with{" "}
+          <code>SHOTAPI_FREE_KEY_IP_LIMIT</code>, <code>SHOTAPI_FREE_KEY_IP_WINDOW_SEC</code>,{" "}
+          <code>SHOTAPI_FREE_KEY_EMAIL_LIMIT</code>, <code>SHOTAPI_FREE_KEY_EMAIL_WINDOW_SEC</code>,{" "}
+          <code>SHOTAPI_FREE_KEY_COOLDOWN_SEC</code> (<code>0</code> turns the cooldown off),{" "}
+          <code>SHOTAPI_FREE_KEY_GLOBAL_LIMIT</code>, <code>SHOTAPI_FREE_KEY_GLOBAL_WINDOW_SEC</code>,{" "}
+          <code>SHOTAPI_FREE_KEY_DAILY_LIMIT</code>, and <code>SHOTAPI_FREE_KEY_DAILY_WINDOW_SEC</code>.
+          Set <code>SHOTAPI_FREE_KEYS=0</code> to disable public mint. A 429 includes{" "}
+          <code>Retry-After</code>.
+        </li>
         <li>
           <code>POST /api/v1/render</code> has no per-minute rate limit. The cap is the monthly quota:
           demo {demoQuota}, Pro {proQuota}. Past that, the route returns 402. The quota is checked

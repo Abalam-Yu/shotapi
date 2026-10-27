@@ -12,6 +12,7 @@ export function SiteFooter() {
         Operated by 禧柱 于 (Abalam-Yu).
       </p>
       <nav aria-label="Legal">
+        <Link href="/#free-key">Free key</Link>
         <Link href="/docs">API docs</Link>
         <Link href="/docs#checkout">Checkout</Link>
         <Link href="/legal/terms">Terms</Link>

@@ -1,10 +1,11 @@
 import Link from "next/link";
 
 import { CodeSample } from "@/components/code-sample";
+import { MintKey } from "@/components/mint-key";
 import { TryIt } from "@/components/try-it";
 import { resolveBillingProvider } from "@/lib/billing/provider";
 import { config, isDemoMode } from "@/lib/config";
-import { APP_BASE, curlPng, DEMO_KEY_SAMPLE, PRO_PRICE } from "@/lib/examples";
+import { APP_BASE, curlQuickStart, DEMO_KEY_SAMPLE, PRO_PRICE } from "@/lib/examples";
 
 export const dynamic = "force-dynamic";
 
@@ -27,18 +28,18 @@ export default function HomePage() {
             back. Authorize with an API key. ShotAPI Pro is {PRO_PRICE}/month.
           </p>
           <div className="actions">
-            <Link className="button" href="/docs">
+            <a className="button" href="#free-key">
+              Mint a free key
+            </a>
+            <Link className="button secondary" href="/docs">
               Read the docs
-            </Link>
-            <Link className="button secondary" href="/docs#checkout">
-              Start checkout
             </Link>
             <a className="button secondary" href="#pricing">
               Pro · {PRO_PRICE}/mo
             </a>
           </div>
         </div>
-        <CodeSample label="Quick start" code={curlPng} />
+        <CodeSample label="Quick start" code={curlQuickStart} />
       </section>
 
       <section className="grid-3" aria-label="How it works">
@@ -86,8 +87,8 @@ export default function HomePage() {
               <li>PNG, JPEG, and PDF</li>
               <li>No card required</li>
             </ul>
-            <a className="button secondary" href="#try">
-              Try a snippet
+            <a className="button secondary" href="#free-key">
+              Mint a free key
             </a>
           </article>
           <article className="card card-pro">
@@ -141,6 +142,16 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="section" id="free-key">
+        <h2>Mint a free key</h2>
+        <p className="lede">
+          No account and no admin token. A Free key is plan <code>demo</code>: {demoQuota} renders
+          per UTC month. The full secret is shown once. Pro checkout still uses the key you already
+          have.
+        </p>
+        <MintKey origin={APP_BASE} limit={config.quotaDemo()} />
+      </section>
+
       <section className="section" id="try">
         <h2>Render a snippet</h2>
         {demo ? (
@@ -152,7 +163,7 @@ export default function HomePage() {
                 <>
                   {" "}
                   The built-in key is <code>{DEMO_KEY_SAMPLE}</code>. It stops working when{" "}
-                  <code>SHOTAPI_DEMO=0</code>.
+                  <code>SHOTAPI_DEMO=0</code>. Use a Free key from above for a key of your own.
                 </>
               ) : null}
             </p>
@@ -160,8 +171,8 @@ export default function HomePage() {
           </>
         ) : (
           <p>
-            The public preview form is off. Mint a key with <code>SHOTAPI_ADMIN_TOKEN</code>, then
-            call <code>POST {APP_BASE}/api/v1/render</code>. The request shape is in the{" "}
+            The shared preview form is off. Mint a Free key above, then call{" "}
+            <code>POST {APP_BASE}/api/v1/render</code>. The request shape is in the{" "}
             <Link href="/docs#render">docs</Link>.
           </p>
         )}

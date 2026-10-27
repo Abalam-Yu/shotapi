@@ -30,7 +30,13 @@ pnpm smoke                   # 另开终端，对着已启动的服务
 | --- | --- |
 | `SHOTAPI_DEMO` | `1` 开启演示密钥和落地页预览。`0` 关闭。不设置时：本地开，Vercel 关。 |
 | `SHOTAPI_DEMO_KEY` | 演示密钥明文。默认 `sk_demo_local_dev_only`。这是公开示例，生产环境不要用。 |
-| `SHOTAPI_ADMIN_TOKEN` | 调用 `POST /api/v1/keys` 时的管理口令。不设置则不能签发新密钥。 |
+| `SHOTAPI_ADMIN_TOKEN` | 调用操作员接口 `POST /api/v1/keys` 的管理口令。不设置则该接口返回 503。公开的 `POST /api/v1/keys/free` 不读这个值。 |
+| `SHOTAPI_FREE_KEYS` | `0` 关闭公开 Free 密钥签发（404）。默认开启。 |
+| `SHOTAPI_FREE_KEY_IP_LIMIT` / `SHOTAPI_FREE_KEY_IP_WINDOW_SEC` | 每个客户端 IP 的签发次数和窗口秒数。默认 5 次 / 86400 秒。 |
+| `SHOTAPI_FREE_KEY_EMAIL_LIMIT` / `SHOTAPI_FREE_KEY_EMAIL_WINDOW_SEC` | 请求里带了 email 时，按邮箱哈希再限一次。默认 5 次 / 86400 秒。 |
+| `SHOTAPI_FREE_KEY_COOLDOWN_SEC` | 同一 IP 两次签发的最短间隔。默认 15。`0` 关闭。 |
+| `SHOTAPI_FREE_KEY_GLOBAL_LIMIT` / `SHOTAPI_FREE_KEY_GLOBAL_WINDOW_SEC` | 全站签发上限。默认 1000 次 / 3600 秒。 |
+| `SHOTAPI_FREE_KEY_DAILY_LIMIT` / `SHOTAPI_FREE_KEY_DAILY_WINDOW_SEC` | 全站按天上限。默认 5000 次 / 86400 秒。配了 Upstash 时这些计数跨实例；否则只在当前进程。 |
 | `SHOTAPI_DATA_DIR` | 本地文件库目录，默认 `.data`。单进程。 |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | 都设置后，用量写入 Upstash。Vercel 上建议打开，否则用量只在当前实例内存里。 |
 | `SHOTAPI_QUOTA_DEMO` / `SHOTAPI_QUOTA_PRO` | 每月成功渲染次数，默认 100 / 10000。 |
@@ -85,7 +91,25 @@ curl -sS http://localhost:3000/api/v1/usage \
   -H "authorization: Bearer sk_demo_local_dev_only"
 ```
 
-签发密钥（先在环境变量里设置 `SHOTAPI_ADMIN_TOKEN`）：
+公开领取 Free 密钥（不需要管理口令，计划是 `demo`，默认每月 100 次）。响应里的 `key` 只出现这一次：
+
+```bash
+curl -sS -X POST http://localhost:3000/api/v1/keys/free \
+  -H "content-type: application/json" \
+  -d '{"name":"show-hn"}'
+```
+
+用拿到的密钥截一张公开网页的 PNG：
+
+```bash
+curl -sS -X POST http://localhost:3000/api/v1/render \
+  -H "authorization: Bearer $SHOTAPI_KEY" \
+  -H "content-type: application/json" \
+  -o shot.png \
+  -d '{"url":"https://example.com","format":"png"}'
+```
+
+操作员签发密钥（可指定 `plan: "pro"`，先设置 `SHOTAPI_ADMIN_TOKEN`）：
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/v1/keys \
@@ -107,7 +131,7 @@ curl -sS -X POST http://localhost:3000/api/v1/billing/checkout \
 
 1. 把仓库导入 Vercel，框架选 Next.js，Node 22。
 2. 生产环境不要设 `SHOTAPI_DEMO=1`，除非你接受公开演示密钥。
-3. 设置 `SHOTAPI_ADMIN_TOKEN`，部署后用它签发真正的 key。
+3. 访客自己在首页或 `POST /api/v1/keys/free` 领取 Free 密钥，不需要 `SHOTAPI_ADMIN_TOKEN`。管理口令只留给操作员签发（包括直接发 Pro）。生产环境请配置 Upstash，否则密钥和签发限流都只活在当前实例内存里。需要临时关掉公开领取时设 `SHOTAPI_FREE_KEYS=0`。Show HN 如果超过默认的每小时 1000 次或每天 5000 次，调大 `SHOTAPI_FREE_KEY_GLOBAL_LIMIT` 和 `SHOTAPI_FREE_KEY_DAILY_LIMIT`。
 4. 设置 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`。不设置的话，`/api/v1/health` 里 `storage` 为 `memory`、`persistent` 为 `false`，实例回收后用量归零。
 5. `RENDER_DRIVER` 保持 `auto`。Vercel 上会走 `@sparticuz/chromium` + `playwright-core`。Playwright 启动时用 `path.join(packageRoot, "browsers.json")` 读描述文件，Next 的文件追踪跟不住这条计算路径。pnpm 下 `packageRoot` 是 `node_modules/.pnpm/playwright-core@…` 的真实目录，不是 `node_modules/playwright-core` 软链。`next.config.ts` 会把这个 `browsers.json` 和 `@sparticuz/chromium` 的 `bin/*.br` 打进 `/api/v1/render`、`/api/v1/demo/render` 和 `/api/v1/health`。部署后可在构建产物上跑 `pnpm verify:trace` 确认追踪列表里同时有 `lib/coreBundle.js` 和它旁边的 `browsers.json`。
 6. 函数内存：Fluid Compute 下在项目 Settings → Functions 里选至少 Standard（2 GB）。不要在 `vercel.json` 里写 `memory`。路由上的 `maxDuration` 是 60 秒。包没打全时，渲染返回的 `browser_missing` 以前会误写成内存不足；`/api/v1/health` 现在只有浏览器文件真能加载时才报 `browser=sparticuz`，否则 `browser` 为 `missing` 且 `ok` 为 false。
@@ -142,12 +166,14 @@ curl -sS -X POST http://localhost:3000/api/v1/billing/checkout \
 - 文件库只适合单进程。Vercel 无 Upstash 时用量不持久。
 - 渲染不受信任的页面时，把进程放在容器里。默认关闭了 Chrome sandbox，否则很多容器起不来。
 - 配额是先检查再渲染，并发请求可能略微超出月度上限。
-- Demo 密钥写在 README 里，只为本地演示。
+- Demo 密钥写在 README 里，只为本地演示。生产环境用 `POST /api/v1/keys/free` 领取自己的 Free 密钥。
+- 公开领取默认每个 IP 每 24 小时 5 把，同一 IP 冷却 15 秒；带邮箱时再按邮箱限 5 把；全站每小时 1000、每天 5000。Upstash 配置后这些计数跨实例，否则随机实例重启会清零。详见 `/docs#limits`。
 
 ## 目录
 
 - `app/api/v1/render` 认证渲染
 - `app/api/v1/usage` 用量
+- `app/api/v1/keys/free` 公开领取 Free 密钥（有 IP / 邮箱 / 全站限流）
 - `app/api/v1/keys` 管理口令签发密钥
 - `app/api/v1/billing/*` Creem、Stripe 沙箱，或 demo 结账
 - `app/legal/*` 服务条款、隐私政策、退款政策

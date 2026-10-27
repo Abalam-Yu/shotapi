@@ -5,10 +5,12 @@ import { config } from "@/lib/config";
 export function LegalDocument({
   title,
   description,
+  updated = "22 October 2026",
   children,
 }: {
   title: string;
   description: string;
+  updated?: string;
   children: ReactNode;
 }) {
   const email = config.supportEmail();
@@ -17,7 +19,7 @@ export function LegalDocument({
       <p className="eyebrow">Legal</p>
       <h1>{title}</h1>
       <p className="lede">
-        {description} Last updated 22 October 2026. Operator: 禧柱 于 (Abalam-Yu). Contact{" "}
+        {description} Last updated {updated}. Operator: 禧柱 于 (Abalam-Yu). Contact{" "}
         <a href={`mailto:${email}`}>{email}</a>.
       </p>
       {children}

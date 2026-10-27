@@ -14,6 +14,7 @@ export default function TermsPage() {
     <LegalDocument
       title="Terms of Service"
       description="These terms cover the ShotAPI screenshot and PDF rendering API."
+      updated="27 October 2026"
     >
       <h2>The service</h2>
       <p>
@@ -24,10 +25,12 @@ export default function TermsPage() {
 
       <h2>API keys</h2>
       <p>
-        Keys are issued by the operator. The full secret is shown once, when the key is created. We store only a hash.
-        You are responsible for keeping the secret confidential and for every request made with it. If a secret is lost or
-        exposed, contact <a href={`mailto:${email}`}>{email}</a> and we will revoke it and issue a replacement. We cannot
-        recover a secret we no longer hold.
+        You can mint a Free key on the site or with <code>POST /api/v1/keys/free</code>. The operator can also issue
+        keys. The full secret is shown once, when the key is created. We store only a hash. You are responsible for
+        keeping the secret confidential and for every request made with it. If a secret is lost or exposed, contact{" "}
+        <a href={`mailto:${email}`}>{email}</a> and we will revoke it and issue a replacement. We cannot recover a secret
+        we no longer hold. Minting is rate limited by network, and by email if you provide one. Do not script new Free
+        keys to get around that limit or the monthly quota.
       </p>
 
       <h2>Plans and price</h2>
