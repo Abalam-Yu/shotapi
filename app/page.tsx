@@ -72,7 +72,10 @@ export default function HomePage() {
       <section className="section" id="pricing">
         <h2>Pricing</h2>
         <p className="lede">
-          Two monthly quotas. Upgrade the key that calls the API by starting checkout.
+          Two monthly quotas. Upgrade the key that calls the API by starting checkout. Public list
+          prices for <Link href="/compare/screenshotone">ScreenshotOne</Link>,{" "}
+          <Link href="/compare/apiflash">ApiFlash</Link>, and <Link href="/compare/urlbox">Urlbox</Link>{" "}
+          are on the <Link href="/compare">comparison pages</Link>.
         </p>
         <div className="pricing">
           <article className="card">

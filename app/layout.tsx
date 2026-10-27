@@ -2,10 +2,11 @@ import type { Metadata, Viewport } from "next";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { PRO_PRICE } from "@/lib/examples";
+import { APP_BASE, PRO_PRICE } from "@/lib/examples";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(APP_BASE),
   title: {
     default: "ShotAPI",
     template: "%s · ShotAPI",

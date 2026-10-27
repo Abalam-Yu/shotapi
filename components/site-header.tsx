@@ -10,6 +10,7 @@ export function SiteHeader() {
       <nav aria-label="Primary">
         <Link href="/#free-key">Free key</Link>
         <Link href="/#pricing">Pricing</Link>
+        <Link href="/compare">Compare</Link>
         <Link href="/docs">Docs</Link>
         <a href="https://github.com/Abalam-Yu/shotapi">GitHub</a>
       </nav>

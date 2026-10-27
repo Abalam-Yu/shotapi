@@ -35,7 +35,10 @@ export default function DocsPage() {
       <p className="lede">
         Base URL: <code>{APP_BASE}</code>. Send a public URL or HTML to{" "}
         <code>POST /api/v1/render</code> and get PNG, JPEG, or PDF back. ShotAPI Pro is {PRO_PRICE}/month{" "}
-        (<Link href="/#pricing">{proQuota} renders</Link>; demo is {demoQuota}/month).
+        (<Link href="/#pricing">{proQuota} renders</Link>; demo is {demoQuota}/month). Public list
+        prices next to <Link href="/compare/screenshotone">ScreenshotOne</Link>,{" "}
+        <Link href="/compare/apiflash">ApiFlash</Link>, and <Link href="/compare/urlbox">Urlbox</Link>{" "}
+        are on the <Link href="/compare">comparison pages</Link>.
       </p>
       <nav className="toc" aria-label="On this page">
         <a href="#auth">Auth</a>
@@ -176,6 +179,7 @@ export default function DocsPage() {
         <code>SHOTAPI_MAX_BODY_BYTES</code>).
       </p>
       <CodeSample label="HTML to PNG" code={curlPng} />
+      <CodeSample label="URL to PNG" code={curlUrlPng} />
       <CodeSample label="URL to PDF" code={curlPdf} />
       <p>
         Replace <code>$SHOTAPI_KEY</code> with the <code>key</code> from{" "}
