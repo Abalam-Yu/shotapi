@@ -57,6 +57,8 @@ a:hover { color: var(--ink); }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
   padding: 1.25rem 0;
 }
 
@@ -81,7 +83,7 @@ a:hover { color: var(--ink); }
   font-family: var(--serif);
 }
 
-.topbar nav { display: flex; gap: 1.25rem; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
 .topbar nav a { color: var(--ink); text-decoration: none; }
 .topbar nav a:hover { color: var(--copper); }
 
@@ -235,6 +237,24 @@ th { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; colo
 
 h2[id], #billing, #free-key { scroll-margin-top: 1.25rem; }
 
+.crumbs { margin: 0 0 1rem; color: var(--muted); font-size: 0.92rem; }
+.crumbs a { color: var(--ink); text-decoration: none; }
+.crumbs a:hover { color: var(--copper); }
+
+.pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+.pick-grid h2 { font-size: 1.7rem; margin: 0.2rem 0 0.6rem; }
+.table-wrap { overflow-x: auto; }
+.compare-table { min-width: 44rem; }
+.compare-table caption {
+  caption-side: top;
+  text-align: left;
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  padding: 0 0 0.7rem;
+  color: var(--ink);
+}
+.compare h1 { font-size: clamp(2.4rem, 5vw, 4.2rem); }
+
 .mint, .mint-result { display: grid; gap: 0.75rem; max-width: 40rem; }
 .mint-secret {
   margin: 0;
@@ -260,7 +280,7 @@ h2[id], #billing, #free-key { scroll-margin-top: 1.25rem; }
 .mint-result h3 { margin-bottom: 0; }
 
 @media (max-width: 860px) {
-  .hero, .try, .grid-3, .pricing { grid-template-columns: 1fr; }
+  .hero, .try, .grid-3, .pricing, .pick-grid { grid-template-columns: 1fr; }
   h1 { font-size: 3rem; }
   .price-amount { font-size: 2.3rem; }
 }
